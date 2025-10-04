@@ -1,0 +1,101 @@
+#!/bin/python3
+
+import math
+import os
+import random
+import re
+import sys
+
+# Complete the classes below.
+# Message text for copy and paste:
+#
+# "Insufficient funds"
+# "Invalid transaction type"
+# "Type: {self.transaction_type}, Amount: {self.amount}, Balance: {self.balance}"
+# "Invalid transaction type '{transaction_type}'. Accepted types: deposit, withdraw, view_transaction_history"
+# "Not enough funds to withdraw {transaction_amount}. Current balance: {self.balance}"
+# "Transaction successful!"
+# "Updated account balance: {self.balance}"
+#
+class InsufficientFundsError(Exception):
+    def __init__(self, transaction_amount, balance):
+        self.status_code = 400
+        self.message = f"Not enough funds to withdraw {transaction_amount}. Current balance: {balance}"
+
+class InvalidTransactionType(Exception):
+    def __init__(self, transaction_type):
+        self.status_code = 400
+        self.message = (f"Invalid transaction type '{transaction_type}'. Accepted types: "
+                        "deposit, withdraw, view_transaction_history")
+
+class Transaction:
+    def __init__(self, transaction_type, amount, balance):
+        self.transaction_type = transaction_type
+        self.amount = amount
+        self.balance = balance
+
+    def __str__(self):
+        return (f"Type: {self.transaction_type}, Amount: {self.amount}, Balance: {self.balance}")
+
+class BankAccount:
+    def __init__(self, initial_balance):
+        self.balance = float(initial_balance)
+        self.transaction_history = []
+
+    def process_transaction(self, transaction_amount, transaction_type):
+        accepted_types = {"deposit", "withdraw", "view_transaction_history"}
+
+        if transaction_type not in accepted_types:
+            raise InvalidTransactionType(transaction_type)
+
+        results = []
+        if transaction_type == "deposit":
+            amount = float(transaction_amount)
+            self.balance += amount
+            self.transaction_history.append(Transaction("deposit", amount, self.balance))
+            results.append("Transaction successful!")
+            results.append(f"Updated account balance: {self.balance}")
+            return results
+
+        elif transaction_type == "withdraw":
+            amount = float(transaction_amount)
+            if self.balance < amount:
+                raise InsufficientFundsError(amount, self.balance)
+            self.balance -= amount
+            self.transaction_history.append(Transaction("withdraw", amount, self.balance))
+            results.append("Transaction successful!")
+            results.append(f"Updated account balance: {self.balance}")
+            return results
+
+        elif transaction_type == "view_transaction_history":
+            # Output transaction history list
+            return self.transaction_history
+
+# Driver Code
+if __name__ == '__main__':
+    fptr = open(os.environ['OUTPUT_PATH'], 'w')
+    account = BankAccount(1500.0)
+    no_of_transactions = int(input())
+    
+    while no_of_transactions > 0:
+        try:
+            transaction_type = input().strip()
+            transaction_amount = None
+            if transaction_type == "deposit" or transaction_type == "withdraw":
+                transaction_amount = input().strip()
+
+            result = account.process_transaction(transaction_amount, transaction_type)
+            if transaction_type == "view_transaction_history":
+                for transaction in result:
+                    fptr.write(str(transaction)+ "\n")  
+            else:
+                for item in result:
+                    fptr.write(item +"\n")
+
+        except (InsufficientFundsError, InvalidTransactionType) as e:
+            fptr.write(f"Error ({e.status_code}): {e.message}\n")
+
+        except Exception as e:
+            fptr.write(f"An unexpected error occurred: {e}\n")
+
+        no_of_transactions -= 1
